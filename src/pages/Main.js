@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import AsyncStorage from '@react-native-community/async-storage'
 import { View, Text, SafeAreaView, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -7,12 +8,14 @@ import api from '../services/api';
 import logo from '../assets/logo.png';
 import like from '../assets/like.png';
 import dislike from '../assets/dislike.png';
+import itsamatch from '../assets/itsamatch.png';
 
 
 export default function Main({ navigation }) {
   const id = navigation.getParam('user');
   const [users, setUsers] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [matchDev, setMatchDev] = useState(null);
   
 
   useEffect(() => {
@@ -28,6 +31,17 @@ export default function Main({ navigation }) {
     }
     loadUsers();
     
+  } ,[id]);
+
+  useEffect(() => {
+    const socket = io('http://localhost:3333', {
+      query: { user: id }
+    })
+
+    socket.on('match',dev => {
+      setMatchDev(dev);
+    })
+
   } ,[id]);
 
   async function handleLike() {
@@ -95,39 +109,51 @@ export default function Main({ navigation }) {
           </View>
         )
       }
+      { matchDev && (
+        <View style={styles.matchContainer} >
+          <Image style={styles.matchImage} source={itsamatch} />
+          <Image style={styles.matchAvatar} source={{uri: matchDev.avatar}} />
+          <Text style={styles.matchName}>{matchDev.name}</Text>
+          <Text style={styles.matchBio}>{matchDev.bio}</Text>
+          <TouchableOpacity onPress={ () => { setMatchDev(null)} } >
+            <Text style={styles.closeMatch} >FECHAR</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const styles =  StyleSheet.create({
   container: {
-    flex:1,
-    backgroundColor: '#F5F5F5',
+    flex: 1,
+    backgroundColor: '#f5f5f5',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
 
   logo: {
-    marginTop:30, 
-  },
-
-  empty: {
-    alignSelf: 'center',
-    color: '#999',
-    fontSize: 24,
-    fontWeight:'bold',
+    marginTop: 20
   },
 
   cardsContainer: {
     flex: 1,
-    alignContent: 'stretch',
-    alignItems: 'center',
-    maxHeight: 500, 
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    maxHeight: 500
   },
-  
+    
+  empty: {
+    fontSize: 32,
+    color: '#999',
+    fontWeight: 'bold',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+
   card: {
-    width: 500,
-    maxWidth: 320,
     borderWidth: 1,
     borderColor: '#DDD',
     borderRadius: 8,
@@ -135,56 +161,99 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'absolute',
     top: 0,
-    left: -190,
-    bottom: 0,
+    left: 0,
     right: 0,
+    bottom: 0
   },
 
   avatar: {
     flex: 1,
     height: 300,
+    backgroundColor: '#DDD'
   },
 
   footer: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#fff',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 15
   },
 
   name: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#333'
   },
 
   bio: {
     fontSize: 14,
     color: '#999',
     marginTop: 5,
-    lineHeight: 18,
+    lineHeight: 18
   },
 
   buttonsContainer: {
-    flexDirection: "row",
-    marginBottom: 30, 
+    flexDirection: 'row',
+    marginBottom: 30
   },
-
   button: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal:20,
+    marginHorizontal: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 2,
     shadowOffset: {
-      width:0,
-      height: 2,
+        width: 0,
+        height: 2,
     }
-  }
+  },
 
+  matchContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+
+  matchImage: {
+    height: 60,
+    resizeMode: 'contain'
+  },
+
+  matchAvatar: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 5,
+    borderColor: '#FFF',
+    marginVertical: 30
+  },
+
+  matchName: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFF'
+  },
+
+  matchBio: {
+    marginTop: 10,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 24,
+    textAlign: 'center',
+    paddingHorizontal: 30
+  },
+
+  closeMatch: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    marginTop: 30,
+    fontWeight: 'bold'
+  }
 })
